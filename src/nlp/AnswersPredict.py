@@ -15,7 +15,13 @@ if __name__ == '__main__':
     devAnswersQulityFileName="dev-gold.xml"
     devAnswersYNFileName="dev-gold.xml"
     FILE_SEPARATOR="/"
-#     user_list = commentClassify.getPredictsData(dataPath+FILE_SEPARATOR+devFileName,
-#                                                 dataPath+FILE_SEPARATOR+devFileName)
-    user_list = commentClassify.getPredictsData(dataPath+FILE_SEPARATOR+trainFileName,
-                                                dataPath+FILE_SEPARATOR+testFileName)
+    generalFile="1501220053-test-task1.txt"
+    yesnoFile="1501220053-test-task2.txt"
+    user_list = commentClassify.getPredictsData(dataPath+FILE_SEPARATOR+devFileName
+                                                ,dataPath+FILE_SEPARATOR+devFileName
+                                                ,dataPath+FILE_SEPARATOR+generalFile
+                                                ,dataPath+FILE_SEPARATOR+yesnoFile)
+#     user_list = commentClassify.getPredictsData(dataPath+FILE_SEPARATOR+trainFileName
+#                                                 ,dataPath+FILE_SEPARATOR+testFileName
+#                                                 ,dataPath+FILE_SEPARATOR+generalFile
+#                                                 ,dataPath+FILE_SEPARATOR+yesnoFile)

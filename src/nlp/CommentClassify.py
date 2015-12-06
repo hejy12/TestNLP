@@ -11,6 +11,7 @@ import nltk
 from nltk.corpus import stopwords
 
 from nlp.DataExtrator import DataExtrator
+from jieba.finalseg import PROB_EMIT_P
 
 class CommentClassify(object):
     global general,yesno,questionMarks,apieceN
@@ -171,6 +172,7 @@ class CommentClassify(object):
     
     def getTestData(self,testQtype,testQBody,testCommentNodeList,trainTopNWords):
         testData=[]
+        cidList=[]
         for commentNode in testCommentNodeList:
             cid = DataExtrator.getAttrValue(commentNode, 'CID')
             cuser = DataExtrator.getAttrValue(commentNode, 'CUSERID')
@@ -181,24 +183,55 @@ class CommentClassify(object):
             allFeatures=self.getFeatures(trainTopNWords,[[testTopNWords]]);
             #这里仅为利用已有方法而做的结构变化
             testData.append(allFeatures[0][0])
-        return testData
+            cidList.append(cid)
+        return testData,cidList
     
-    def getPredictsData(self,traiFileName,testFileName):
+    def addDict(self,dict,word,word2,pagenumber):
+        if dict.has_key(word):
+            dict[word].setdefault(word2, []).append(pagenumber)
+        else:
+            dict[word]={}
+            dict[word].setdefault(word2, []).append(pagenumber)
+    
+    def getPredictResult(self,resultDict):
+        retDict={}
+        maxValue=0
+        maxIndex=0
+        for (k,v) in resultDict.items():
+            aggregateDict={}
+            for(k2,v2) in v.items():
+                aggregateDict[k2]=sum(v2)/len(v2)
+            for (k3,v3) in aggregateDict.items():
+                if maxValue<v3:
+                    maxIndex=k3
+                    maxValue=v3
+            retDict[k]=maxIndex
+        return retDict
+    
+    def appendFile(self,allLevelDict,filePath):
+        output = open(filePath, 'a')
+        for (k,v) in self.getPredictResult(allLevelDict).items():
+            output.write(k+'\t'+v+"\r")
+            print k,'\t',v
+        output.close()
+    
+    def getPredictsData(self,traiFileName,testFileName,generalFile,yesnoFile):
         trainRoot = minidom.parse(traiFileName).documentElement
         testRoot = minidom.parse(testFileName).documentElement
     
         testQuestions = DataExtrator.getXMLNode(testRoot, 'Question')
         trainQuestions = DataExtrator.getXMLNode(trainRoot, 'Question')
         for i in range(0,len(testQuestions),1):
+            allLevelDict={}
             testQid,testQcategory,testQuserid,testQtype,testQgold_yn,testQBody,testCommentNodeList=self.getSplitData(testQuestions[i])
 #             print testDict
             for node in trainQuestions:
                 trainQid,trainQcategory,trainQuserid,trainQtype,trainQgold_yn,trainQBody,trainCommentNodeList=self.getSplitData(node)
 #                 if testQcategory==trainQcategory and trainQtype==testQtype:
-                if testQcategory==trainQcategory and trainQtype==testQtype and testQtype=='YES_NO':
-#                 if testQcategory==trainQcategory and trainQtype==testQtype:
+#                 if testQcategory==trainQcategory and trainQtype==testQtype and testQtype=='YES_NO':
+                if testQcategory==trainQcategory and trainQtype==testQtype:
                     trainData,topNWords=self.generateFeatures(trainQtype,trainQBody,trainCommentNodeList)
-                    testData=self.getTestData(testQtype,testQBody,testCommentNodeList,topNWords)
+                    testData,cidList=self.getTestData(testQtype,testQBody,testCommentNodeList,topNWords)
     #                 print trainQid,trainData
                     if trainData:
                         classifier = nltk.NaiveBayesClassifier.train(trainData)
@@ -211,9 +244,17 @@ class CommentClassify(object):
                         print('[TEST]:%s - %s \r\n[TRAIN]:%s - %s' %(testQid,testQBody,trainQid,trainQBody))
                         for j in range(0,len(pdist),1):
                             for label in labelList:
+                                if pdist[j].prob(label)>=0.1:
+                                    self.addDict(allLevelDict,cidList[j],questionMarks[label],pdist[j].prob(label))
                                 print('第%s个comment属于%s的概率: %.4f' %(j+1,questionMarks[label],pdist[j].prob(label)))
                     else:
                         print 'It does not have dataset..'
 #             break;
 #             print 'The 1th round of loop ended'
+            if testQtype=='YES_NO':
+                self.appendFile(allLevelDict,yesnoFile);
+            else:
+                self.appendFile(allLevelDict,generalFile);
+                
             print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Question number'+bytes(i+1)+' finished'
+            

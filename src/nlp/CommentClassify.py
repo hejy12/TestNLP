@@ -11,11 +11,10 @@ import nltk
 from nltk.corpus import stopwords
 
 from nlp.DataExtrator import DataExtrator
-from jieba.finalseg import PROB_EMIT_P
 
 class CommentClassify(object):
     global general,yesno,questionMarks,apieceN
-    apieceN=10
+    apieceN=3
     general="GENERAL"
     yesno="YES_NO"
     #N/A型的问题没必要相似运算
@@ -46,7 +45,7 @@ class CommentClassify(object):
                 else:
                     splitWords.append([])
         stopword = stopwords.words('english')
-        filterWordsList = [w for w in tokens if w not in stopword]
+        filterWordsList = [w for w in tokens if w.lower() not in stopword]
         for word in filterWordsList:  
             if word in all_words.keys():  
                 all_words[word] += 1  
@@ -106,8 +105,8 @@ class CommentClassify(object):
                 #NA问题没必要进行相似运算
 #                 elif cgold==questionMarks[9]:
 #                     naComments.append(cBody)
-#                 else:
-#                     noDisplayComments.append(cBody)
+                else:
+                    noDisplayComments.append(cBody)
             elif qtype == yesno:#yes_no型问题暂未考虑ctype
                 if cgold_yn==questionMarks[6]:
                     yesComments.append(cBody)
@@ -117,10 +116,10 @@ class CommentClassify(object):
                     unsureComments.append(cBody)
 #                 elif cgold_yn==questionMarks[9]:
 #                     naComments.append(cBody)
-#                 else:
-#                     noDisplayComments.append(cBody)
-            #最后要将问答答案全都加入到一个未出现的分类
-            noDisplayComments.append(cBody)
+                else:
+                    noDisplayComments.append(cBody)
+            #暂时不加入
+#             noDisplayComments.append(cBody)
         qBodyList=[qBody]
         allList.append(qBodyList)
         
@@ -244,8 +243,8 @@ class CommentClassify(object):
                         print('[TEST]:%s - %s \r\n[TRAIN]:%s - %s' %(testQid,testQBody,trainQid,trainQBody))
                         for j in range(0,len(pdist),1):
                             for label in labelList:
-                                if pdist[j].prob(label)>=0.1:
-                                    self.addDict(allLevelDict,cidList[j],questionMarks[label],pdist[j].prob(label))
+#                                 if pdist[j].prob(label)!=0 and pdist[j].prob(label)!=1:
+                                self.addDict(allLevelDict,cidList[j],questionMarks[label],pdist[j].prob(label))
                                 print('第%s个comment属于%s的概率: %.4f' %(j+1,questionMarks[label],pdist[j].prob(label)))
                     else:
                         print 'It does not have dataset..'

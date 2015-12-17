@@ -45,7 +45,7 @@ class CommentClassify(object):
                 else:
                     splitWords.append([])
         stopword = stopwords.words('english')
-        filterWordsList = [w for w in tokens if w.lower() not in stopword]
+        filterWordsList = [w for w in tokens if w.lower() not in stopword and self.isDigit(w.lower())==False]
         for word in filterWordsList:  
             if word in all_words.keys():  
                 all_words[word] += 1  
@@ -64,6 +64,21 @@ class CommentClassify(object):
             for t in range(0, topNWordsCount, 1):
                 topNWords.append('NOP'+bytes(t))
         return topNWords,splitWords;
+    
+    def isDigit(self,s):
+        s=s.replace(",","")
+        try:
+            float(s)
+            return True
+        except ValueError:
+            pass
+        try:
+            import unicodedata
+            unicodedata.numeric(s)
+            return True
+        except (TypeError, ValueError):
+            pass
+        return False
     
     #'Good','Bad','Potential','Dialogue','non-English','Other','Yes','No','Unsure'
     #分别在question，good，bad，potential，dialogue取top10个词作为它们的特征值
@@ -154,7 +169,7 @@ class CommentClassify(object):
                         featuresDict['contains(%s)' %word] = (word in splitWords[i][j])
                     featuresTuple=(featuresDict,i);
 #                     print featuresDict
-                    allFeaturesList.append(featuresTuple)
+                allFeaturesList.append(featuresTuple)
 #         print allFeaturesList
         return allFeaturesList
     
@@ -199,7 +214,8 @@ class CommentClassify(object):
         for (k,v) in resultDict.items():
             aggregateDict={}
             for(k2,v2) in v.items():
-                aggregateDict[k2]=sum(v2)/len(v2)
+#                 aggregateDict[k2]=sum(v2)/len(v2)
+                aggregateDict[k2]=sum(v2)
             for (k3,v3) in aggregateDict.items():
                 if maxValue<v3:
                     maxIndex=k3
@@ -243,8 +259,8 @@ class CommentClassify(object):
                         print('[TEST]:%s - %s \r\n[TRAIN]:%s - %s' %(testQid,testQBody,trainQid,trainQBody))
                         for j in range(0,len(pdist),1):
                             for label in labelList:
-#                                 if pdist[j].prob(label)!=0 and pdist[j].prob(label)!=1:
-                                self.addDict(allLevelDict,cidList[j],questionMarks[label],pdist[j].prob(label))
+                                if pdist[j].prob(label)!=0 and pdist[j].prob(label)!=1 and pdist[j].prob(label)!=0.5:#去除prob为0和1的值
+                                    self.addDict(allLevelDict,cidList[j],questionMarks[label],pdist[j].prob(label))
                                 print('第%s个comment属于%s的概率: %.4f' %(j+1,questionMarks[label],pdist[j].prob(label)))
                     else:
                         print 'It does not have dataset..'

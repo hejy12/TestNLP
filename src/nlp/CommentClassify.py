@@ -225,9 +225,27 @@ class CommentClassify(object):
     
     def appendFile(self,allLevelDict,filePath):
         output = open(filePath, 'a')
-        for (k,v) in self.getPredictResult(allLevelDict).items():
-            output.write(k+'\t'+v+"\r")
-            print k,'\t',v
+        if filePath.find("task1")!=-1:
+            for (k,v) in self.getPredictResult(allLevelDict).items():
+                output.write(k+'\t'+v+"\r")
+                print k,'\t',v
+        else:
+            yesnoDict={}
+            key=""
+            maxLabelCount=0
+            maxLabel=""
+            for (k,v) in self.getPredictResult(allLevelDict).items():
+                key=k.split("_")[0]
+                self.addDict(yesnoDict, key, v, 1)
+            if yesnoDict.get(key):
+                for (k2,v2) in yesnoDict.get(key).items():
+                    if maxLabelCount<len(v2):
+                        maxLabelCount=len(v2)
+                        maxLabel=k2
+            else:
+                output.write(key+"~~~~~~~~~~~~~~~~~~~~~~~~~noData")
+            output.write(key+'\t'+maxLabel+"\r")
+            print key,'\t',maxLabel
         output.close()
     
     def getPredictsData(self,traiFileName,testFileName,generalFile,yesnoFile):
